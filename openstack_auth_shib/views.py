@@ -40,7 +40,7 @@ from openstack_auth import forms
 from openstack_auth.forms import Login  # noqa
 from openstack_auth import user as auth_user
 from openstack_auth import utils
-from openstack_auth import shib_utils
+from openstack_auth_shib import shib_utils
 from openstack_auth import exceptions
 
 try:
