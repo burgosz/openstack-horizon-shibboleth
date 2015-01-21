@@ -14,7 +14,7 @@ sys.path.append("/usr/share/openstack-dashboard/")
 DEBUG = False
 
 _application = get_wsgi_application()
-env_variables_to_pass = ['REMOTE_USER', 'entitlements',]
+env_variables_to_pass = ['REMOTE_USER', 'entitlements','mail',]
 def application(environ, start_response):
     # pass the WSGI environment variables on through to os.environ
     for var in env_variables_to_pass:

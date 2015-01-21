@@ -81,7 +81,7 @@ def update_roles(user):
 
 def create_user():
 	client = admin_client()
-	newuser = client.users.create(name=current_user)
+	newuser = client.users.create(name=current_user,email=os.environ['mail'])
 	return newuser
 
 def update_user():
