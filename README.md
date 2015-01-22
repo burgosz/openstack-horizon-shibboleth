@@ -32,7 +32,7 @@ OPENSTACK_KEYSTONE_ADMIN_TOKEN = "your keystone admin token"
 SHIB_LOGOUT = "url of Shibboleth logout page"
 ```
 ### Apache configuration
-You must configure Apache to provide endpoint for Keystone.<br>
+You must configure Apache to provide endpoint for Keystone. You must specify the same VirualHost for Keystone and Horizon.<br>
 I recommend this tutorial: https://developer.rackspace.com/blog/configure-keystone-apache/<br>
 You must protect the Horizon page with Shibboleth.
 ### Shibboleth configuration
