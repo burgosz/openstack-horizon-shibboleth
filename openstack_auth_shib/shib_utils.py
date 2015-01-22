@@ -13,7 +13,7 @@ LOG = logging.getLogger(__name__)
 admin_token = getattr(settings, 'OPENSTACK_KEYSTONE_ADMIN_TOKEN')
 admin_url = getattr(settings, 'OPENSTACK_KEYSTONE_ADMIN_URL')
 current_user = os.environ['REMOTE_USER']
-entitlements = os.environ['entitlements']
+entitlement = os.environ['entitlement']
 
 def admin_client():
 	keystone_client = utils.get_keystone_client()
@@ -46,7 +46,7 @@ def get_tenant(name):
 
 def update_roles(user):
 	client = admin_client()
-	entitlement_list = entitlements.split(";")
+	entitlement_list = entitlement.split(";")
 	ent_roles = defaultdict(list)
 
 	for entitlement in entitlement_list:
