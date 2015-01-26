@@ -61,10 +61,6 @@ def login(request, template_name=None, extra_context=None, **kwargs):
     # dashboard straight away, unless the 'next' parameter is set as it
     # usually indicates requesting access to a page that requires different
     # permissions.
-    if (request.user.is_authenticated() and
-            auth.REDIRECT_FIELD_NAME not in request.GET and
-            auth.REDIRECT_FIELD_NAME not in request.POST):
-        return shortcuts.redirect(settings.LOGIN_REDIRECT_URL)
 
     LOG.info(os.environ['REMOTE_USER'])
     #auth_url = 'http://localhost/keystone/main/v2.0/'
@@ -87,7 +83,11 @@ def login(request, template_name=None, extra_context=None, **kwargs):
         request.session['region_name'] = region_name
     return shortcuts.redirect(settings.LOGIN_REDIRECT_URL)
 
-
+@never_cache
+def get_token(request):
+    auth_url = getattr(settings,'OPENSTACK_KEYSTONE_URL')
+    token = shib_utils.get_token_from_env(auth_url)
+    return shortcuts.render(request,'token.html',{"token":token})
 def logout(request, login_url=None, **kwargs):
     """Logs out the user if he is logged in. Then redirects to the log-in page.
 
@@ -107,7 +107,7 @@ def logout(request, login_url=None, **kwargs):
     if token and endpoint:
         delete_token(endpoint=endpoint, token_id=token.id)
     """ Securely logs a user out. """
-    return django_auth_views.logout_then_login(request, login_url=settings.SHIB_LOGOUT,
+    return django_auth_views.logout_then_login(request, login_url=login_url,
                                                **kwargs)
 
 

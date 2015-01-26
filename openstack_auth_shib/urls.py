@@ -23,6 +23,7 @@ urlpatterns = patterns(
     'openstack_auth_shib.views',
     url(r"^login/$", "login", name='login'),
     url(r"^logout/$", 'logout', name='logout'),
+    url(r"^get_token/$", 'get_token', name='get_token'),
     url(r'^switch/(?P<tenant_id>[^/]+)/$', 'switch', name='switch_tenants'),
     url(r'^switch_services_region/(?P<region_name>[^/]+)/$', 'switch_region',
         name='switch_services_region')
