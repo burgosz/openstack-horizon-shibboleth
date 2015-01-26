@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load url from future %}
+
+{% block title %} - {% trans "Token" %}{% endblock %}
+
+{% block content %}
+  <div id="right_content">
+    <div id="page_head">
+      <h3 id="page_heading">Your token for api usage is: {{token}}</h3>
+    </div>
+  </div>
+{% endblock %}
