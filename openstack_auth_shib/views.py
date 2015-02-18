@@ -66,11 +66,9 @@ def login(request, template_name=None, extra_context=None, **kwargs):
     #auth_url = 'http://localhost/keystone/main/v2.0/'
     auth_url = getattr(settings,'OPENSTACK_KEYSTONE_URL')
     domain = getattr(settings,'OPENSTACK_KEYSTONE_DEFAULT_DOMAIN','Default')
-    try:
-        tokenid = shib_utils.get_token_from_env(auth_url)
-    except exceptions.KeystoneAuthException as exc:
-        return shortcuts.render(request, '500.html')
-    user = authenticate(request=request,token=tokenid,user_domain_name=domain,auth_url=auth_url)
+    username = shib_utils.update_user()
+    password = shib_utils.get_password(username)
+    user = authenticate(request=request,username=username,password=password,user_domain_name=domain,auth_url=auth_url)
     res = auth_login(request, user)
     # Set the session data here because django's session key rotation
     # will erase it if we set it earlier.
@@ -84,10 +82,9 @@ def login(request, template_name=None, extra_context=None, **kwargs):
     return shortcuts.redirect(settings.LOGIN_REDIRECT_URL)
 
 @never_cache
-def get_token(request):
-    auth_url = getattr(settings,'OPENSTACK_KEYSTONE_URL')
-    token = shib_utils.get_token_from_env(auth_url)
-    return shortcuts.render(request,'token.html',{"token":token})
+def get_password(request):
+    password = shib_utils.get_password(os.environ['REMOTE_USER'])
+    return shortcuts.render(request,'password.html',{"password":password})
 def logout(request, login_url=None, **kwargs):
     """Logs out the user if he is logged in. Then redirects to the log-in page.
 
@@ -107,7 +104,7 @@ def logout(request, login_url=None, **kwargs):
     if token and endpoint:
         delete_token(endpoint=endpoint, token_id=token.id)
     """ Securely logs a user out. """
-    return django_auth_views.logout_then_login(request, login_url=settings.SHIB_LOGOUT,
+    return django_auth_views.logout_then_login(request, login_url='http://controller/Shibboleth.sso/Logout',
                                                **kwargs)
 
 

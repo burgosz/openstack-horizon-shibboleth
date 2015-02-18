@@ -55,7 +55,8 @@ class Shib_KeystoneBackend(openstack_auth.backend.KeystoneBackend):
         keystone_client = utils.get_keystone_client()
         try:
             client = keystone_client.Client(
-		token=token,
+                username=username,
+                password=password,
                 auth_url=auth_url,
                 insecure=insecure,
                 cacert=ca_cert,

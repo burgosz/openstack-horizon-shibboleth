@@ -3,17 +3,18 @@ import json
 import requests
 import logging
 import os
+import hashlib
 from openstack_auth import utils
 from keystoneclient import exceptions as keystone_exceptions
 from collections import defaultdict
 from openstack_auth import exceptions
+from openstack_auth_shib import shib_global
 
- 
 LOG = logging.getLogger(__name__)
 admin_token = getattr(settings, 'OPENSTACK_KEYSTONE_ADMIN_TOKEN')
 admin_url = getattr(settings, 'OPENSTACK_KEYSTONE_ADMIN_URL')
 current_user = os.environ['REMOTE_USER']
-entitlement = os.environ['entitlement']
+entitlements = os.environ['entitlement']
 
 def admin_client():
 	keystone_client = utils.get_keystone_client()
@@ -29,6 +30,15 @@ def get_user():
 		if user.username==current_user:
 			return user
 	return None
+def get_password(username):
+	salt = getattr(settings,'SHIB_PASSWORD_SALT')
+	password = hashlib.sha512(username+salt).hexdigest()
+	return password
+
+def update_password(user):
+	client = admin_client()
+	client.users.update_password(user,get_password(current_user))
+
 def get_role(name):
 	client = admin_client()
 	roles = client.roles.list()
@@ -46,7 +56,7 @@ def get_tenant(name):
 
 def update_roles(user):
 	client = admin_client()
-	entitlement_list = entitlement.split(";")
+	entitlement_list = entitlements.split(";")
 	ent_roles = defaultdict(list)
 
 	for entitlement in entitlement_list:
@@ -81,7 +91,7 @@ def update_roles(user):
 
 def create_user():
 	client = admin_client()
-	newuser = client.users.create(name=current_user,email=os.environ['mail'])
+	newuser = client.users.create(name=current_user,password=get_password(current_user),email=os.environ['mail'])
 	return newuser
 
 def update_user():
@@ -89,16 +99,5 @@ def update_user():
 	if user is None:
 		user = create_user()
 	update_roles(user)
-
-def get_token_from_env(auth_url):
-	try:
-		update_user()
-	except Exception as exc:
-		LOG.error(str(exc))
-		msg = "An error occurred authenticating. Please try again later."
-		raise exceptions.KeystoneAuthException(msg)
-	r = requests.post(auth_url+'/tokens',data='{"auth":{}}')
-	token = json.loads(r.text)
-	tokenid = token['access']['token']['id']
-	LOG.error("User token: "+tokenid)
-	return tokenid
+	update_password(user)
+	return current_user
