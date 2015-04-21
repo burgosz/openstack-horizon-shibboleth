@@ -62,7 +62,6 @@ def login(request, template_name=None, extra_context=None, **kwargs):
     # usually indicates requesting access to a page that requires different
     # permissions.
 
-    LOG.info(os.environ['REMOTE_USER'])
     #auth_url = 'http://localhost/keystone/main/v2.0/'
     auth_url = getattr(settings,'OPENSTACK_KEYSTONE_URL')
     domain = getattr(settings,'OPENSTACK_KEYSTONE_DEFAULT_DOMAIN','Default')
@@ -72,6 +71,7 @@ def login(request, template_name=None, extra_context=None, **kwargs):
     res = auth_login(request, user)
     # Set the session data here because django's session key rotation
     # will erase it if we set it earlier.
+    LOG.info("Token id: "+request.user.token.id)
     if request.user.is_authenticated():
         auth_user.set_session_from_user(request, request.user)
         regions = dict(forms.Login.get_region_choices())
@@ -83,7 +83,7 @@ def login(request, template_name=None, extra_context=None, **kwargs):
 
 @never_cache
 def get_password(request):
-    password = shib_utils.get_password(os.environ['REMOTE_USER'])
+    password = shib_utils.get_password(os.environ['eppn'])
     return shortcuts.render(request,'password.html',{"password":password})
 def logout(request, login_url=None, **kwargs):
     """Logs out the user if he is logged in. Then redirects to the log-in page.
@@ -104,7 +104,7 @@ def logout(request, login_url=None, **kwargs):
     if token and endpoint:
         delete_token(endpoint=endpoint, token_id=token.id)
     """ Securely logs a user out. """
-    return django_auth_views.logout_then_login(request, login_url='http://controller/Shibboleth.sso/Logout',
+    return django_auth_views.logout_then_login(request, login_url='https://openstack.hbit.sztaki.hu/Shibboleth.sso/Logout',
                                                **kwargs)
 
 
