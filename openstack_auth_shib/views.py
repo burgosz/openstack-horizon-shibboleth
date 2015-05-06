@@ -61,7 +61,8 @@ def login(request, template_name=None, extra_context=None, **kwargs):
     # dashboard straight away, unless the 'next' parameter is set as it
     # usually indicates requesting access to a page that requires different
     # permissions.
-
+    if not environ['eppn']:
+       return shortcuts.redirect(settings.LOGIN_REDIRECT_URL)
     #auth_url = 'http://localhost/keystone/main/v2.0/'
     auth_url = getattr(settings,'OPENSTACK_KEYSTONE_URL')
     domain = getattr(settings,'OPENSTACK_KEYSTONE_DEFAULT_DOMAIN','Default')
