@@ -60,28 +60,34 @@ def login(request, template_name=None, extra_context=None, **kwargs):
     # dashboard straight away, unless the 'next' parameter is set as it
     # usually indicates requesting access to a page that requires different
     # permissions.
-    eppn = request.META.get('eppn', None)
-    if not eppn:
-       #return shortcuts.redirect(settings.LOGIN_REDIRECT_URL)
-       raise Exception('Missing parameters in user session')
-    #auth_url = 'http://localhost/keystone/main/v2.0/'
-    auth_url = getattr(settings,'OPENSTACK_KEYSTONE_URL')
-    domain = getattr(settings,'OPENSTACK_KEYSTONE_DEFAULT_DOMAIN','Default')
-    username = shib_utils.update_user(request)
-    password = shib_utils.get_password(request, username)
-    LOG.error("Authenticating username=%s, password=%s, user_domain_name=%s, auth_url=%s" % (username, password, domain, auth_url))
-    user = authenticate(request=request, username=username, password=password, user_domain_name=domain, auth_url=auth_url)
-    res = auth_login(request, user)
-    # Set the session data here because django's session key rotation
-    # will erase it if we set it earlier.
-    LOG.info("Token id: " + request.user.token.id)
-    if request.user.is_authenticated():
-        auth_user.set_session_from_user(request, request.user)
-        regions = dict(forms.Login.get_region_choices())
-        region = request.user.endpoint
-        region_name = regions.get(region)
-        request.session['region_endpoint'] = region
-        request.session['region_name'] = region_name
+    if not request.user.is_authenticated():
+        eppn = request.META.get('eppn', None)
+        if not eppn:
+           #return shortcuts.redirect(settings.LOGIN_REDIRECT_URL)
+           raise Exception('Missing parameters in user session')
+
+        auth_url = getattr(settings,'OPENSTACK_KEYSTONE_URL')
+        domain = getattr(settings,'OPENSTACK_KEYSTONE_DEFAULT_DOMAIN','Default')
+        username = shib_utils.update_user(request)
+        password = shib_utils.get_password(request, username)
+
+        #LOG.error("Authenticating username=%s, password=%s, user_domain_name=%s, auth_url=%s" % (username, password, domain, auth_url))
+        user = authenticate(request=request, username=username, password=password, user_domain_name=domain, auth_url=auth_url)
+        msg = 'Login successful for user "%(username)s".' % {'username': username}
+        LOG.info(msg)
+
+        res = auth_login(request, user)
+        # Set the session data here because django's session key rotation will erase it if we set it earlier.
+        LOG.info("Token id: " + request.user.token.id)
+
+        if request.user.is_authenticated():
+            auth_user.set_session_from_user(request, request.user)
+            regions = dict(forms.Login.get_region_choices())
+            region = request.user.endpoint
+            region_name = regions.get(region)
+            request.session['region_endpoint'] = region
+            request.session['region_name'] = region_name
+
     return shortcuts.redirect(settings.LOGIN_REDIRECT_URL)
 
 @never_cache
