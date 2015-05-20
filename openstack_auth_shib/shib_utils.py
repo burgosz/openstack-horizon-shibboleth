@@ -14,19 +14,16 @@ admin_url = getattr(settings, 'OPENSTACK_KEYSTONE_ADMIN_URL')
 name_field = getattr(settings, 'SHIBBOLETH_NAME_FIELD', 'eppn')
 mail_field = getattr(settings, 'SHIBBOLETH_EMAIL_FIELD', 'mail')
 entitlement_field = getattr(settings, 'SHIBBOLETH_ENTITLEMENT_FIELD', 'entitlement')
+default_domain = getattr(settings, 'DEFAULT_DOMAIN_NAME', 'Default')
 
 def admin_client():
     endpoint = admin_url
-
     if utils.get_keystone_version() >= 3:
         if not utils.has_in_url_path(endpoint, '/v3'):
             endpoint = utils.url_path_replace(endpoint, '/v2.0', '/v3', 1)
 
     keystone_client = utils.get_keystone_client()
-    client = keystone_client.Client(
-        token = admin_token,
-        endpoint = endpoint)
-
+    client = keystone_client.Client(token=admin_token, endpoint=endpoint)
     return client
 
 def get_user(request, username):
@@ -128,15 +125,23 @@ def update_password(request, user):
 
 def create_user(request, username):
     client = admin_client()
-    newuser = client.users.create(name=username)
+
+    if utils.get_keystone_version() >= 3:
+        newuser = client.users.create(name=username, domain=default_domain)
+    else:
+        newuser = client.users.create(username=username)
+
     return newuser
 
 def update_user(request):
     username = request.META.get(name_field, None)
     user = get_user(request, username)
+
     if user is None:
         user = create_user(request, username)
+
     update_roles(request, user)
     update_password(request, user)
     update_mail(request, user)
+
     return user.name
