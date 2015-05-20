@@ -14,7 +14,6 @@
 import logging
 
 import django
-import os
 import json
 import requests
 from django.conf import settings
@@ -61,18 +60,21 @@ def login(request, template_name=None, extra_context=None, **kwargs):
     # dashboard straight away, unless the 'next' parameter is set as it
     # usually indicates requesting access to a page that requires different
     # permissions.
-    if not environ['eppn']:
-       return shortcuts.redirect(settings.LOGIN_REDIRECT_URL)
+    eppn = request.META.get('eppn', None)
+    if not eppn:
+       #return shortcuts.redirect(settings.LOGIN_REDIRECT_URL)
+       raise Exception('Missing parameters in user session')
     #auth_url = 'http://localhost/keystone/main/v2.0/'
     auth_url = getattr(settings,'OPENSTACK_KEYSTONE_URL')
     domain = getattr(settings,'OPENSTACK_KEYSTONE_DEFAULT_DOMAIN','Default')
-    username = shib_utils.update_user()
-    password = shib_utils.get_password(username)
-    user = authenticate(request=request,username=username,password=password,user_domain_name=domain,auth_url=auth_url)
+    username = shib_utils.update_user(request)
+    password = shib_utils.get_password(request, username)
+    LOG.error("Authenticating username=%s, password=%s, user_domain_name=%s, auth_url=%s" % (username, password, domain, auth_url))
+    user = authenticate(request=request, username=username, password=password, user_domain_name=domain, auth_url=auth_url)
     res = auth_login(request, user)
     # Set the session data here because django's session key rotation
     # will erase it if we set it earlier.
-    LOG.info("Token id: "+request.user.token.id)
+    LOG.info("Token id: " + request.user.token.id)
     if request.user.is_authenticated():
         auth_user.set_session_from_user(request, request.user)
         regions = dict(forms.Login.get_region_choices())
@@ -84,8 +86,10 @@ def login(request, template_name=None, extra_context=None, **kwargs):
 
 @never_cache
 def get_password(request):
-    password = shib_utils.get_password(os.environ['eppn'])
+    eppn = request.META.get('eppn', None)
+    password = shib_utils.get_password(request, eppn)
     return shortcuts.render(request,'password.html',{"password":password})
+
 def logout(request, login_url=None, **kwargs):
     """Logs out the user if he is logged in. Then redirects to the log-in page.
 
