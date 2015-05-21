@@ -66,8 +66,6 @@ def update_roles(request, user):
     entitlement = request.META.get(entitlement_field, '').replace("\\", "")
     entitlement_list = entitlement.split(';')
     ent_roles = defaultdict(list)
-    LOG.error("entitlement = %s" % entitlement)
-    LOG.error("entitlement_list = %s" % entitlement_list)
 
     # retrieve info from shibboleth session
     for entitlement in entitlement_list:
@@ -75,6 +73,9 @@ def update_roles(request, user):
         rolename = splitted[len(splitted)-1]
         tenantname = splitted[len(splitted)-2]
         ent_roles[tenantname].append(rolename)
+
+    LOG.error("entitlement = %s" % entitlement)
+    LOG.error("ent_roles = %s" % ent_roles)
 
     # create tenants
     new_tenants = list()
