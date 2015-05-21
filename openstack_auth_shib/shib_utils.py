@@ -66,6 +66,8 @@ def update_roles(request, user):
     entitlement = request.META.get(entitlement_field, '').replace("\\", "")
     entitlement_list = entitlement.split(';')
     ent_roles = defaultdict(list)
+    LOG.error("entitlement = %s" % entitlement)
+    LOG.error("entitlement_list = %s" % entitlement_list)
 
     # retrieve info from shibboleth session
     for entitlement in entitlement_list:
@@ -79,8 +81,9 @@ def update_roles(request, user):
     for t in ent_roles.keys():
         tenant = get_tenant(t)
         if tenant is None:
+            LOG.info("Creating tenant %s." % t)
             if utils.get_keystone_version() >= 3:
-                tenants = client.projects.create(tenant_name=t)
+                tenants = client.projects.create(name=t, domain=default_domain)
             else:
                 tenant = client.tenants.create(tenant_name=t)
         new_tenants.append(tenant)
@@ -138,6 +141,7 @@ def update_user(request):
     user = get_user(request, username)
 
     if user is None:
+        LOG.info("Creating user %s." % username)
         user = create_user(request, username)
 
     update_roles(request, user)
