@@ -29,16 +29,16 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns  # noqa
 import openstack_auth_shib
 import horizon
 
-if settings.AUTHENTICATION_BACKENDS[0]=='openstack_auth_shib.backend.Shib_KeystoneBackend':
-    auth_urls = 'openstack_auth_shib.urls'
-else:
-    auth_urls = 'openstack_auth.urls'
-
 urlpatterns = patterns('',
     url(r'', include(horizon.urls)),
     url(r'^$', 'openstack_dashboard.views.splash', name='splash'),
-    url(r'^auth/', include(auth_urls)),
+    url(r'^auth/', include('openstack_auth.urls')),
 )
+
+if settings.AUTHENTICATION_BACKENDS[0]=='openstack_auth_shib.backend.Shib_KeystoneBackend':
+    urlpatterns += patterns('',
+        url(r'^auth_shib/', include('openstack_auth_shib.urls')),
+    )
 
 # Development static app and project media serving using the staticfiles app.
 urlpatterns += staticfiles_urlpatterns()
