@@ -121,7 +121,7 @@ def update_roles_v3(client, user, ent_roles):
                 role = get_role(rolename)
                 client.roles.grant(role, user=user, project=tenant)
 
-def update_roles_v2(client, user, nt_roles):
+def update_roles_v2(client, user, ent_roles):
     existing_tenants = client.tenants.list()
 
     for tenant in existing_tenants:
