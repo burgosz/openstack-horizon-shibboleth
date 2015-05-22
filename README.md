@@ -13,7 +13,7 @@ When Shibboleth authenticates the user it write the required attributes to Apach
 
 If the user not exists in the Keystone database, the plugin creates it. The plugin can assign the users to projects with the provided role. The plugin creates the project and the role if not exists.
 
-The backend will generate a password for the user which can be used for API and cli usage. This password can be checked in /horizon/auth/get_password/ url.
+The backend will generate a password for the user which can be used for API and cli usage. This password can be checked in /horizon/auth_shib/get_password/ url.
 ### Installation
 Download the openstack_auth_shib dictionary into your Python libraries.<br>
 On Ubuntu:
@@ -25,6 +25,11 @@ On Ubuntu by default:
 ```sh
 /usr/share/openstack-dashboard/openstack-dashboard
 ```
+Do the same with file from horizon folder.
+On Ubuntu by default:
+```sh
+/usr/lib/python2.7/dist-packages/horizon
+```
 Add the following lines to your openstack-dashboard local_settings.py file:
 ```sh
 AUTHENTICATION_BACKENDS = ('openstack_auth_shib.backend.Shib_KeystoneBackend',)
@@ -33,12 +38,18 @@ OPENSTACK_KEYSTONE_ADMIN_URL = "location of Keystone admin url (similar to OPENS
 OPENSTACK_KEYSTONE_ADMIN_TOKEN = "your keystone admin token"
 SHIB_PASSWORD_SALT = "random number" This will be used to SALT the username to provide a password for cli usage.
 SHIB_LOGOUT = "url of Shibboleth logout page"
+SHIBBOLETH_NAME_FIELD = 'eppn'
+SHIBBOLETH_EMAIL_FIELD = 'mail'
+SHIBBOLETH_ENTITLEMENT_FIELD = 'isMemberOf'
+DEFAULT_DOMAIN_NAME = 'Default'
+
 ```
 ### Apache configuration
 You must protect the Horizon page with Shibboleth.
 ### Shibboleth configuration
-Shibboleth must map the username provided via your attribute provider to <b>eppn.</b><br>
-The roles and project names must be in the <b>entitlement</b> attribute. The entitlement postfix contains the project and role name separeted with colon: <i>entilement_prefix:<b>project:role</b></i>.<br>
+Shibboleth must map the username provided via your attribute provider to <b>eppn</b>.<br>
+The roles and project names must be in the <b>entitlement</b> or <b>isMemberOf</b> attribute.
+This field must contain the project and role name separeted with colon: <i>entilement_prefix:<b>project:role</b></i>.<br>
 The email address of the user will be assigned based on the <b>mail</b> attribute.
 
 If no entitlement or eppn provided the user can't login.
