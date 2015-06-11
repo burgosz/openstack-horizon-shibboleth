@@ -14,7 +14,6 @@
 import logging
 
 import django
-import os
 import json
 import requests
 from django.conf import settings
@@ -61,141 +60,38 @@ def login(request, template_name=None, extra_context=None, **kwargs):
     # dashboard straight away, unless the 'next' parameter is set as it
     # usually indicates requesting access to a page that requires different
     # permissions.
-    if not environ['eppn']:
-       return shortcuts.redirect(settings.LOGIN_REDIRECT_URL)
-    #auth_url = 'http://localhost/keystone/main/v2.0/'
-    auth_url = getattr(settings,'OPENSTACK_KEYSTONE_URL')
-    domain = getattr(settings,'OPENSTACK_KEYSTONE_DEFAULT_DOMAIN','Default')
-    username = shib_utils.update_user()
-    password = shib_utils.get_password(username)
-    user = authenticate(request=request,username=username,password=password,user_domain_name=domain,auth_url=auth_url)
-    res = auth_login(request, user)
-    # Set the session data here because django's session key rotation
-    # will erase it if we set it earlier.
-    LOG.info("Token id: "+request.user.token.id)
-    if request.user.is_authenticated():
-        auth_user.set_session_from_user(request, request.user)
-        regions = dict(forms.Login.get_region_choices())
-        region = request.user.endpoint
-        region_name = regions.get(region)
-        request.session['region_endpoint'] = region
-        request.session['region_name'] = region_name
+    if not request.user.is_authenticated():
+        eppn = request.META.get(settings.SHIBBOLETH_NAME_FIELD, None)
+        if not eppn:
+           raise Exception('Missing parameters in user session')
+
+        auth_url = getattr(settings,'OPENSTACK_KEYSTONE_URL')
+        domain = getattr(settings,'OPENSTACK_KEYSTONE_DEFAULT_DOMAIN','Default')
+        username = shib_utils.update_user(request)
+        password = shib_utils.get_password(request, username)
+
+        #LOG.error("Authenticating username=%s, password=%s, user_domain_name=%s, auth_url=%s" % (username, password, domain, auth_url))
+        user = authenticate(request=request, username=username, password=password, user_domain_name=domain, auth_url=auth_url)
+        msg = 'Login successful for user "%(username)s".' % {'username': username}
+        LOG.info(msg)
+
+        res = auth_login(request, user)
+        # Set the session data here because django's session key rotation will erase it if we set it earlier.
+        LOG.info("Token id: " + request.user.token.id)
+
+        if request.user.is_authenticated():
+            auth_user.set_session_from_user(request, request.user)
+            regions = dict(forms.Login.get_region_choices())
+            region = request.user.endpoint
+            region_name = regions.get(region)
+            request.session['region_endpoint'] = region
+            request.session['region_name'] = region_name
+
     return shortcuts.redirect(settings.LOGIN_REDIRECT_URL)
 
 @never_cache
 def get_password(request):
-    password = shib_utils.get_password(os.environ['eppn'])
+    username = request.user.username
+    password = shib_utils.get_password(request, username)
     return shortcuts.render(request,'password.html',{"password":password})
-def logout(request, login_url=None, **kwargs):
-    """Logs out the user if he is logged in. Then redirects to the log-in page.
 
-    .. param:: login_url
-
-       Once logged out, defines the URL where to redirect after login
-
-    .. param:: kwargs
-       see django.contrib.auth.views.logout_then_login extra parameters.
-
-    """
-    msg = 'Logging out user "%(username)s".' % \
-        {'username': request.user.username}
-    LOG.info(msg)
-    endpoint = request.session.get('region_endpoint')
-    token = request.session.get('token')
-    if token and endpoint:
-        delete_token(endpoint=endpoint, token_id=token.id)
-    """ Securely logs a user out. """
-    return django_auth_views.logout_then_login(request, login_url='https://openstack.hbit.sztaki.hu/Shibboleth.sso/Logout',
-                                               **kwargs)
-
-
-def delete_token(endpoint, token_id):
-    """Delete a token."""
-
-    insecure = getattr(settings, 'OPENSTACK_SSL_NO_VERIFY', False)
-    ca_cert = getattr(settings, "OPENSTACK_SSL_CACERT", None)
-    utils.remove_project_cache(token_id)
-    try:
-        if utils.get_keystone_version() < 3:
-            client = keystone_client_v2.Client(
-                endpoint=endpoint,
-                token=token_id,
-                insecure=insecure,
-                cacert=ca_cert,
-                debug=settings.DEBUG
-            )
-            client.tokens.delete(token=token_id)
-            LOG.info('Deleted token %s' % token_id)
-        else:
-            # FIXME: KS-client does not have delete token available
-            # Need to add this later when it is exposed.
-            pass
-    except keystone_exceptions.ClientException:
-        LOG.info('Could not delete token')
-
-
-@login_required
-def switch(request, tenant_id, redirect_field_name=auth.REDIRECT_FIELD_NAME):
-    """Switches an authenticated user from one project to another."""
-    LOG.debug('Switching to tenant %s for user "%s".'
-              % (tenant_id, request.user.username))
-    insecure = getattr(settings, 'OPENSTACK_SSL_NO_VERIFY', False)
-    ca_cert = getattr(settings, "OPENSTACK_SSL_CACERT", None)
-    endpoint = request.user.endpoint
-    try:
-        if utils.get_keystone_version() >= 3:
-            if not utils.has_in_url_path(endpoint, '/v3'):
-                endpoint = utils.url_path_replace(endpoint, '/v2.0', '/v3', 1)
-        client = utils.get_keystone_client().Client(
-            tenant_id=tenant_id,
-            token=request.user.token.id,
-            auth_url=endpoint,
-            insecure=insecure,
-            cacert=ca_cert,
-            debug=settings.DEBUG)
-        auth_ref = client.auth_ref
-        msg = 'Project switch successful for user "%(username)s".' % \
-            {'username': request.user.username}
-        LOG.info(msg)
-        LOG.error("New project: "+tenant_id)
-    except keystone_exceptions.ClientException:
-        msg = 'Project switch failed for user "%(username)s".' % \
-            {'username': request.user.username}
-        LOG.warning(msg)
-        auth_ref = None
-        LOG.exception('An error occurred while switching sessions.')
-
-    # Ensure the user-originating redirection url is safe.
-    # Taken from django.contrib.auth.views.login()
-    redirect_to = settings.LOGIN_REDIRECT_URL
-    if auth_ref:
-        old_endpoint = request.session.get('region_endpoint')
-        old_token = request.session.get('token')
-        if old_token and old_endpoint and old_token.id != auth_ref.auth_token:
-            delete_token(endpoint=old_endpoint, token_id=old_token.id)
-            LOG.error("Project switch: "+old_token.id+" "+old_endpoint+" "+auth_ref.auth_token)
-        user = auth_user.create_user_from_token(
-            request, auth_user.Token(auth_ref), endpoint)
-        LOG.error("New token: "+user.id)
-        auth_user.set_session_from_user(request, user)
-    return shortcuts.redirect(redirect_to)
-
-
-@login_required
-def switch_region(request, region_name,
-                  redirect_field_name=auth.REDIRECT_FIELD_NAME):
-    """Switches the user's region for all services except Identity service.
-
-    The region will be switched if the given region is one of the regions
-    available for the scoped project. Otherwise the region is not switched.
-    """
-    if region_name in request.user.available_services_regions:
-        request.session['services_region'] = region_name
-        LOG.debug('Switching services region to %s for user "%s".'
-                  % (region_name, request.user.username))
-
-    redirect_to = request.REQUEST.get(redirect_field_name, '')
-    if not is_safe_url(url=redirect_to, host=request.get_host()):
-        redirect_to = settings.LOGIN_REDIRECT_URL
-
-    return shortcuts.redirect(redirect_to)
