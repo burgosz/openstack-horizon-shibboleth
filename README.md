@@ -32,7 +32,7 @@ On Ubuntu by default:
 ```
 Add the following lines to your openstack-dashboard local_settings.py file:
 ```sh
-AUTHENTICATION_BACKENDS = ('openstack_auth_shib.backend.Shib_KeystoneBackend',)
+AUTHENTICATION_BACKENDS = ('openstack_auth_shib.backend.ShibKeystoneBackend',)
 OPENSTACK_KEYSTONE_URL ="location of Keystone url"
 OPENSTACK_KEYSTONE_ADMIN_URL = "location of Keystone admin url (similar to OPENSTACK_KEYSTONE_URL)"
 OPENSTACK_KEYSTONE_ADMIN_TOKEN = "your keystone admin token"

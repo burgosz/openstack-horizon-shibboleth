@@ -18,9 +18,8 @@ default_domain = getattr(settings, 'DEFAULT_DOMAIN_NAME', 'Default')
 
 def admin_client():
     endpoint = admin_url
-    if utils.get_keystone_version() >= 3:
-        if not utils.has_in_url_path(endpoint, '/v3'):
-            endpoint = utils.url_path_replace(endpoint, '/v2.0', '/v3', 1)
+    if utils.get_keystone_version() >= 3 and not utils.has_in_url_path(endpoint, '/v3'):
+        endpoint = utils.url_path_replace(endpoint, '/v2.0', '/v3', 1)
 
     keystone_client = utils.get_keystone_client()
     client = keystone_client.Client(token=admin_token, endpoint=endpoint)
@@ -31,9 +30,8 @@ def get_user(request, username):
     userlist = client.users.list()
 
     for user in userlist:
-        if utils.get_keystone_version() >= 3 and user.name == username:
-            return user
-        elif utils.get_keystone_version() < 3 and user.username == username:
+        if (utils.get_keystone_version() >= 3 and user.name == username) or \
+           (utils.get_keystone_version() < 4 and user.username == username):
             return user
     return None
 
@@ -127,26 +125,30 @@ def update_roles_v2(client, user, ent_roles):
     for tenant in existing_tenants:
         # remove unused roles and add new ones
         for tenant in existing_tenants:
-            if (user in tenant.list_users()):
-                roles = user.list_roles(tenant)
-                for role in roles:
-                    # If the tenant is not in the ent_roles, it is an old tenant, all
-                    # roles will be removed from user.
-                    # If the role in keystone is a correct role for the user, remove
-                    # this value from ent_roles.
-                    if tenant.name in ent_roles and role.name in ent_roles[tenant.name]:
-                         ent_roles[tenant.name].remove(role.name)
-                    # Otherwise, if the role in keystone is not correct, revoke the role
-                    # from the user.
-                    else:
-                         tenant.remove_user(user, role)
+            if not user in tenant.list_users():
+                continue
+
+            roles = user.list_roles(tenant)
+            for role in roles:
+                # If the tenant is not in the ent_roles, it is an old tenant, all
+                # roles will be removed from user.
+                # If the role in keystone is a correct role for the user, remove
+                # this value from ent_roles.
+                if tenant.name in ent_roles and role.name in ent_roles[tenant.name]:
+                    ent_roles[tenant.name].remove(role.name)
+                # Otherwise, if the role in keystone is not correct, revoke the role
+                # from the user.
+                else:
+                    tenant.remove_user(user, role)
 
         # Create remaining roles in the ent_roles dict.
         for tenant in existing_tenants:
-            if tenant.name in ent_roles:
-                for rolename in ent_roles[tenant.name]:
-                    role = get_role(rolename)
-                    tenant.add_user(user, role)
+            if not tenant.name in ent_roles:
+                continue
+
+            for rolename in ent_roles[tenant.name]:
+                role = get_role(rolename)
+                tenant.add_user(user, role)
 
 def update_roles(request, user):
     client = admin_client()

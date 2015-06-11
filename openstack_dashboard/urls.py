@@ -35,7 +35,7 @@ urlpatterns = patterns('',
     url(r'^auth/', include('openstack_auth.urls')),
 )
 
-if settings.AUTHENTICATION_BACKENDS[0]=='openstack_auth_shib.backend.Shib_KeystoneBackend':
+if settings.AUTHENTICATION_BACKENDS[0]=='openstack_auth_shib.backend.ShibKeystoneBackend':
     urlpatterns += patterns('',
         url(r'^auth_shib/', include('openstack_auth_shib.urls')),
     )
