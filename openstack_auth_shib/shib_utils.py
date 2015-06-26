@@ -178,7 +178,7 @@ def create_user(request, username):
     if utils.get_keystone_version() >= 3:
         newuser = client.users.create(name=username, domain=default_domain)
     else:
-        newuser = client.users.create(username=username)
+        newuser = client.users.create(name=username)
 
     return newuser
 
