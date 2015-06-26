@@ -70,7 +70,7 @@ def login(request, template_name=None, extra_context=None, **kwargs):
         username = shib_utils.update_user(request)
         password = shib_utils.get_password(request, username)
 
-        #LOG.error("Authenticating username=%s, password=%s, user_domain_name=%s, auth_url=%s" % (username, password, domain, auth_url))
+        LOG.debug("Authenticating username=%s, password=%s, user_domain_name=%s, auth_url=%s" % (username, password, domain, auth_url))
         user = authenticate(request=request, username=username, password=password, user_domain_name=domain, auth_url=auth_url)
         msg = 'Login successful for user "%(username)s".' % {'username': username}
         LOG.info(msg)

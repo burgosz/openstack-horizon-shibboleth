@@ -121,32 +121,32 @@ def update_roles_v3(client, user, ent_roles):
                 role = get_role(rolename)
                 client.roles.grant(role, user=user, project=tenant)
 
-def update_roles_v2(client, user, nt_roles):
+def update_roles_v2(client, user, ent_roles):
     existing_tenants = client.tenants.list()
+    roles_to_give = ent_roles.copy()
 
+    # remove unused roles and add new ones
     for tenant in existing_tenants:
-        # remove unused roles and add new ones
-        for tenant in existing_tenants:
-            if (user in tenant.list_users()):
-                roles = user.list_roles(tenant)
-                for role in roles:
-                    # If the tenant is not in the ent_roles, it is an old tenant, all
-                    # roles will be removed from user.
-                    # If the role in keystone is a correct role for the user, remove
-                    # this value from ent_roles.
-                    if tenant.name in ent_roles and role.name in ent_roles[tenant.name]:
-                         ent_roles[tenant.name].remove(role.name)
-                    # Otherwise, if the role in keystone is not correct, revoke the role
-                    # from the user.
-                    else:
-                         tenant.remove_user(user, role)
+        if user in tenant.list_users():
+            roles = user.list_roles(tenant)
+            for role in roles:
+                # If the tenant is not in the ent_roles, it is an old tenant, all
+                # roles will be removed from user.
+                # If the role in keystone is a correct role for the user, remove
+                # this value from roles_to_give.
+                if tenant.name in roles_to_give and role.name in roles_to_give[tenant.name]:
+                     roles_to_give[tenant.name].remove(role.name)
+                # Otherwise, if the role in keystone is not correct, revoke the role
+                # from the user.
+                else:
+                     tenant.remove_user(user, role)
 
-        # Create remaining roles in the ent_roles dict.
-        for tenant in existing_tenants:
-            if tenant.name in ent_roles:
-                for rolename in ent_roles[tenant.name]:
-                    role = get_role(rolename)
-                    tenant.add_user(user, role)
+    # Create remaining roles in the ent_roles dict.
+    for tenant in existing_tenants:
+        if tenant.name in roles_to_give:
+            for rolename in roles_to_give[tenant.name]:
+                role = get_role(rolename)
+                tenant.add_user(user, role)
 
 def update_roles(request, user):
     client = admin_client()
