@@ -14,5 +14,5 @@
 """ Module defining the Django auth backend class for the Keystone API. """
 import openstack_auth
 
-class Shib_KeystoneBackend(openstack_auth.backend.KeystoneBackend):
+class ShibKeystoneBackend(openstack_auth.backend.KeystoneBackend):
     pass
