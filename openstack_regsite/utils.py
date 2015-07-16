@@ -110,10 +110,10 @@ def update_roles(request, user):
                 role = get_role(rolename)
                 client.roles.grant(role, user=user, project=tenant)
 
-def update_mail(request, user):
+def update_mail(user, email):
     client = admin_client()
-    email = request.META.get(mail_field, None)
-    client.users.update(user, mail=email)
+    
+    client.users.update(user, email=email)
 
 
 def create_user(request, username):
@@ -131,6 +131,9 @@ def update_user(request):
         user = create_user(request, username)
 
     update_roles(request, user)
-    update_mail(request, user)
+    
+    email = request.META.get(mail_field, None)
+    if user.email != email:
+        update_mail(user, email)
 
     return user.name
