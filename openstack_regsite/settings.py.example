@@ -8,11 +8,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.7/ref/settings/
 """
 
+# COPY THIS FILE TO settings.py AND CONFIGURE ACCORDINGLY
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import logging
 import os
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_URL = ''
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
@@ -49,9 +52,17 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'openstack_regsite.urls'
+TEMPLATE_DIRS = (
+    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
+    # Always use forward slashes, even on Windows.
+    # Don't forget to use absolute paths, not relative paths.
+    os.path.join(BASE_DIR, 'openstack_regsite/templates'),
+)
 
-WSGI_APPLICATION = 'openstack_regsite.wsgi.application'
+
+ROOT_URLCONF = 'urls'
+
+WSGI_APPLICATION = 'wsgi.application'
 
 
 # Database
@@ -77,14 +88,17 @@ USE_L10N = True
 
 USE_TZ = True
 
+VEVN_DIR = '/opt/openstack-horizon-shibboleth/regsite-venv'
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.7/howto/static-files/
 
 STATIC_URL = '/static/'
 
-OPENSTACK_KEYSTONE_ADMIN_TOKEN = 'd1410ad0ab162c016171'
+OPENSTACK_NAME = 'OpenStack for GN4 phase 1 project'
+OPENSTACK_URL = 'https://openstack.hbit.sztaki.hu'
 OPENSTACK_KEYSTONE_ADMIN_URL = 'http://10.1.12.4:35357/v3'
+OPENSTACK_KEYSTONE_ADMIN_TOKEN = 'd1410ad0ab162c016171'
 SHIBBOLETH_NAME_ATTRIBUTE = 'eppn'
 SHIBBOLETH_ENTITLEMENT_ATTRIBUTE = 'entitlement'
 SHIBBOLETH_EMAIL_ATTRIBUTE = 'mail'
