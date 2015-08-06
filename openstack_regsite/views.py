@@ -14,13 +14,12 @@ import logging
 logger = logging.getLogger('openstack_regsite')
 
 def index(request):
-
     attributes = {
         'openstack_servername': settings.OPENSTACK_NAME,
         'openstack_url': settings.OPENSTACK_URL,
         'openstack_keystone': settings.OPENSTACK_KEYSTONE_ADMIN_URL,
         'shibboleth_name': request.META.get(settings.SHIBBOLETH_NAME_ATTRIBUTE, None),
-        'shibboleth_entitlement': request.META.get(settings.SHIBBOLETH_ENTITLEMENT_ATTRIBUTE, None),
+        'shibboleth_entitlement': dict(utils.get_entitlemets(request)),
     }
 
     return render_to_response('regsite/index.html', attributes)
