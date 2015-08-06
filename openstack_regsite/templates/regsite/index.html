@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    {% load staticfiles %}
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="OpenStack Registration Site.">
+    <meta name="keywords" content="OpenStack, Keystone, Shibboleth, eduGAIN">
+    <meta name="author" content="Mihaly Heder, Andrea Biancini">
+
+    <title>OpenStack Registration Site</title>
+
+    <link href="{% static 'bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'bootstrap-callout.min.css' %}" rel="stylesheet">
+  </head>
+  <body>
+    <div class="jumbotron">
+      <div class="container">
+        <h1>OpenStack Registration Site</h1>
+        <p>Website that permits to register users to access OpenStack via the federated keystone configuration.</p>
+      </div>
+    </div>
+
+    <div class="container bs-docs-container">
+      <div class="bs-callout bs-callout-danger">
+        <h4>OpenStack information</h4>
+
+        <p>You are trying to access OpenStack server with name <big><span class="label label-danger">{{ openstack_servername }}</span></big>.<br/>
+        This server is available at this URL: <big><span class="label label-danger">{{ openstack_url }}</span></big>.<br/>
+        To access this server your user must be registered in keystone (admin url: <big><span class="label label-danger">{{ openstack_keystone }}</span></big>).</p>
+      </div>
+    
+      <div class="bs-docs-section">
+        <h2>Access OpenStack with federated user</h2>
+        <p>You have been identified with the following caracteristics:</p>
+        <table class="table table-bordered">
+          <tbody>
+            <tr><th scope="row">User name:</th><td>{{ shibboleth_name }}</td></tr>
+            <tr><th scope="row">User entitlement:</th><td>{{ shibboleth_entitlement }}</td></tr>
+          </tbody>
+        </table>
+        <p>If the information you see are correct, please continue.
+        A user for your access will be automatically created in Keystone and the relevant tenants, roles will be created and assigned to your user.</p>
+        <p><a href="shib_hook" class="btn btn-primary btn-lg" role="button">Continue and create user, tenants and roles</a></p>
+      </div>
+    </div>
+  </body>
+</html>

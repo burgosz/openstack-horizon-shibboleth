@@ -1,0 +1,6 @@
+$ sudo apt-get install libffi-dev python-virtualenv apache2 libapache2-mod-wsgi
+
+$ virtualenv regsite-venv
+$ source regsite-venv/bin/activate
+$ cd openstack_regsite
+$ python setup.py develop
