@@ -14,16 +14,20 @@ import logging
 logger = logging.getLogger('openstack_regsite')
 
 def index(request):
-    attributes = {
-        'openstack_servername': settings.OPENSTACK_NAME,
-        'openstack_url': settings.OPENSTACK_URL,
-        'openstack_keystone': settings.OPENSTACK_KEYSTONE_ADMIN_URL,
-        'shibboleth_name': request.META.get(settings.SHIBBOLETH_NAME_ATTRIBUTE, None),
-        'shibboleth_entitlement': dict(utils.get_entitlemets(request)),
-        'next_page': request.GET.get('return', '/'),
-    }
+    eppn = request.META.get(settings.SHIBBOLETH_NAME_ATTRIBUTE, None)
+    if utils.user_exists(eppn):
+        return redirect(next_page)
+    else:
+        attributes = {
+            'openstack_servername': settings.OPENSTACK_NAME,
+            'openstack_url': settings.OPENSTACK_URL,
+            'openstack_keystone': settings.OPENSTACK_KEYSTONE_ADMIN_URL,
+            'shibboleth_name': eppn,
+            'shibboleth_entitlement': dict(utils.get_entitlemets(request)),
+            'next_page': request.GET.get('return', '/'),
+        }
 
-    return render_to_response('regsite/index.html', attributes)
+        return render_to_response('regsite/index.html', attributes)
 
 def shib_hook(request):
     next_page = request.GET.get('return', '/')

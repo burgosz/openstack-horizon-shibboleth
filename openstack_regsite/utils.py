@@ -109,6 +109,10 @@ def create_user(username):
     newuser = client.users.create(name=username, domain=default_domain)
     return newuser
 
+def user_exists(username):
+    user = get_user(username)
+    return user is not None
+
 def update_user(request):
     username = request.META.get(name_field, None)
     user = get_user(username)
