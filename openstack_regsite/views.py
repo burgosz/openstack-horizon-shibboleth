@@ -20,11 +20,13 @@ def index(request):
         'openstack_keystone': settings.OPENSTACK_KEYSTONE_ADMIN_URL,
         'shibboleth_name': request.META.get(settings.SHIBBOLETH_NAME_ATTRIBUTE, None),
         'shibboleth_entitlement': dict(utils.get_entitlemets(request)),
+        'next_page': request.GET.get('return', '/'),
     }
 
     return render_to_response('regsite/index.html', attributes)
 
 def shib_hook(request):
+    next_page = request.GET.get('return', '/')
     eppn = request.META.get(settings.SHIBBOLETH_NAME_ATTRIBUTE, None)
     if not eppn:
         logger.error("Name attribute is missing!")
@@ -33,5 +35,6 @@ def shib_hook(request):
     entitlement = request.META.get(settings.SHIBBOLETH_ENTITLEMENT_ATTRIBUTE, None)
     if entitlement is not None:
         username = utils.update_user(request)
+
     #redirect to the Shibboleth HOOK return url.
-    return redirect(request.GET['return'])
+    return redirect(next_page)
