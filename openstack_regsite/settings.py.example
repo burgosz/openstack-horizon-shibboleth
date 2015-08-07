@@ -26,6 +26,8 @@ SECRET_KEY = 'sxb+cyy7=14=y92ox$lycn8$&)3_w5o_u)m768^#nhv5ud*1pb'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+TEST = False
+
 TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = []
@@ -103,6 +105,7 @@ SHIBBOLETH_NAME_ATTRIBUTE = 'eppn'
 SHIBBOLETH_ENTITLEMENT_ATTRIBUTE = 'entitlement'
 SHIBBOLETH_EMAIL_ATTRIBUTE = 'mail'
 DEFAULT_DOMAIN_NAME = 'Default'
+USER_ACCEPT_CREATION = True
 
 LOGGING = {
     'version': 1,

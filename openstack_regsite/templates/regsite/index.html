@@ -46,7 +46,7 @@
         </table>
         <p>If the information you see are correct, please continue.
         A user for your access will be automatically created in Keystone and the relevant tenants, roles will be created and assigned to your user.</p>
-        <p><a href="shib_hook?return={{ next_page }}" class="btn btn-primary btn-lg" role="button">Continue and create user, tenants and roles</a> <a href="{{ openstack_url }}" class="btn btn-danger btn-lg" role="button">Go back to OpenStack</a></p>
+        <p><a href="{{ base_url }}shib_hook?return={{ return|urlencode }}&target={{ target|urlencode }}" class="btn btn-primary btn-lg" role="button">Continue and create user, tenants and roles</a> <a href="{{ openstack_url }}" class="btn btn-danger btn-lg" role="button">Go back to OpenStack</a></p>
       </div>
     </div>
   </body>
