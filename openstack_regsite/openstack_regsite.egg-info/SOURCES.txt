@@ -1,9 +1,0 @@
-setup.cfg
-setup.py
-openstack_regsite.egg-info/PKG-INFO
-openstack_regsite.egg-info/SOURCES.txt
-openstack_regsite.egg-info/dependency_links.txt
-openstack_regsite.egg-info/entry_points.txt
-openstack_regsite.egg-info/not-zip-safe
-openstack_regsite.egg-info/requires.txt
-openstack_regsite.egg-info/top_level.txt

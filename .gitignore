@@ -4,3 +4,4 @@ settings.py
 *-venv
 openstack_regsite/mysite.log
 .sonar
+**/*.egg-info
