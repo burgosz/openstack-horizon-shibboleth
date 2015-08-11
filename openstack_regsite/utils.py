@@ -109,14 +109,28 @@ def create_user(username):
     newuser = client.users.create(name=username, domain=default_domain)
     return newuser
 
+def user_exists(username):
+    if settings.TEST:
+        return False
+
+    user = get_user(username)
+    return user is not None
+
 def update_user(request):
     username = request.META.get(name_field, None)
+    if settings.TEST:
+        return username
+
     user = get_user(username)
+
     if user is None:
         LOG.info("Creating user %s." % username)
         user = create_user(username)
+
     update_roles(request, user)
     email = request.META.get(mail_field, None)
+
     if user.email != email:
         update_mail(user, email)
+
     return user.name
