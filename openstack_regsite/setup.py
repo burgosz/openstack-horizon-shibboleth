@@ -26,7 +26,7 @@ setup(name='openstack_regsite',
       install_requires=[
           'Django>=1.7',
           'requests>=1.0.0',
-          'djangosaml2>=0.9.0',
+          #'djangosaml2>=0.9.0',
       ],
       entry_points="""
       # -*- Entry points: -*-

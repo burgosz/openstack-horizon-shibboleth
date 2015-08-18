@@ -130,7 +130,10 @@ def update_user(request):
     update_roles(request, user)
     email = request.META.get(mail_field, None)
 
-    if user.email != email:
+    try:
+        if user.email != email:
+            update_mail(user, email)
+    except AttributeError:
         update_mail(user, email)
 
     return user.name

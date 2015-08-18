@@ -70,30 +70,64 @@ USER_ACCEPT_CREATION = True                                # Flag indicating wet
 
 ### Apache configuration
 You must protect the Horizon page with Shibboleth, you also have to specify the configuration of ``mod_wsgi`` to operate the django application.
+Usually the SP configuration for this regsite must be shared with the configuration for Keystone. For this reason the configuration of regsite usually happens
+in the samle file where the keystone webapplication is configured within Apache.
+
 Here an example of configuration for Apache:
 ```apache
-Alias /static /opt/openstack-horizon-shibboleth/openstack_regsite/static
+<VirtualHost *:5000>
+    SSLEngine on
+    SSLProtocol all -SSLv2
+    SSLCipherSuite HIGH:MEDIUM:!aNULL:!MD5
+    SSLCertificateFile /etc/httpd/ssl/os-test.mi.garr.it.crt
+    SSLCertificateKeyFile /etc/httpd/ssl/os-test.mi.garr.it.key
+    SSLCertificateChainFile /etc/httpd/ssl/CA_GARR_MI.pem
 
-<Directory /opt/openstack-horizon-shibboleth/openstack_regsite/static>
+    <Location /Shibboleth.sso>
+        SetHandler shib
+    </Location>
+
+    Alias /regsite/static /opt/openstack-horizon-shibboleth/openstack_regsite/static
+
+    <Directory /opt/openstack-horizon-shibboleth/openstack_regsite/static>
         Require all granted
-</Directory>
+    </Directory>
 
-WSGIDaemonProcess openstack home=/opt/openstack-horizon-shibboleth/openstack_regsite
-WSGIProcessGroup openstack
+    WSGIDaemonProcess regsite home=/opt/openstack-horizon-shibboleth/openstack_regsite
+    WSGIProcessGroup regsite
+    WSGIPassAuthorization Off
+    WSGIScriptAlias /regsite /opt/openstack-horizon-shibboleth/openstack_regsite/wsgi.py
 
-WSGIScriptAlias / /opt/openstack-horizon-shibboleth/openstack_regsite/wsgi.py
-
-<Directory /opt/openstack-horizon-shibboleth/openstack_regsite>
+    <Directory /opt/openstack-horizon-shibboleth/openstack_regsite>
         Options all
         AllowOverride all
         Require all granted
-</Directory>
+    </Directory>
 
-<Location /shib_hook >
+    <Location /regsite>
         authtype shibboleth
         shibRequestSetting requireSession 1
         require valid-user
-</Location>
+    </Location>
+
+    WSGIDaemonProcess keystone-public processes=5 threads=1 user=keystone display-name=%{GROUP}
+    WSGIProcessGroup keystone-public
+    WSGIScriptAlias / /var/www/cgi-bin/keystone/main
+    WSGIApplicationGroup %{GLOBAL}
+    WSGIPassAuthorization On
+    <IfVersion >= 2.4>
+      ErrorLogFormat "%{cu}t %M"
+    </IfVersion>
+    ErrorLog /var/log/httpd/keystone.log
+    CustomLog /var/log/httpd/keystone_access.log combined
+
+    <Location /v3/auth/OS-FEDERATION/websso/saml2>
+        authtype shibboleth
+        shibRequestSetting requireSession 1
+        require valid-user
+    </Location>
+
+</VirtualHost>
 ```
 
 ### Shibboleth configuration
@@ -105,3 +139,86 @@ If no entitlement or eppn provided the user can't login.
 
 The Shibboleth SP must also be configured to invoke the post login hook that creates users/projects on keystone.
 This configuration consist on adding ``sessionHook="/regsite"`` to the ``ApplicationDefaults`` tag of the ``/etc/shibboleth/shibboleth2.xml`` file.
+
+
+### OpenStack keystone and horizon configuration
+To propertly configure keystone and horizon components of OpenStack to work correctly with federated access and with the regsite described in this projects, the following configurations need to be done.a
+
+Firstly the ``openstack/django_openstack_auth`` project must be of a verion including the patch to the change id Change-Id: Ib5c99e3b7b16bfb64b651d2129643d6f53fe7722
+(more information on it can be found [on the official openstack review site](https://review.openstack.org/#/c/173669/).
+If he version of the project does not include this patch, it must be applied by hand with the followin commands:
+```sh
+$ cd /usr/lib/python2.7/site-packages/openstack_auth
+$ patch -p1 < /opt/openstack-horizon-shibboleth/Ib5c99e3b7b16bfb64b651d2129643d6f53fe7722.patch
+```
+
+The file ``/etc/keystone/keystone.conf`` must be modified as follows (only modified parts presented, all the rest of the file remains untouched):
+```ini
+[DEFAULT]
+...
+public_endpoint = https://os.server.name:5000
+
+[auth]
+...
+methods = external,password,token,oauth1,saml2
+saml2 = keystone.auth.plugins.mapped.Mapped
+
+[federation]
+...
+remote_id_attribute = 'Shib-Identity-Provider'
+remote_id_attribute = 'Shib-Identity-Provider'
+trusted_dashboard = https://os.server.name/dashboard/auth/websso/
+sso_callback_template = /etc/keystone/sso_callback_template.html
+
+[ssl]
+...
+enable=True
+```
+
+Then the following commands needs to be executed to create the right structures inside keystone via the JSON API:
+```sh
+#!/bin/bash
+OS_AUTH_URL='https://os.server.name:5000/v3'
+
+# Retrieve a token to be used for authentication.
+# The token-request.json file contains username/password for the admin user to authenticate with keystone.
+export TOKEN=`curl -si -d @token-request.json -H "Content-type: application/json" http://localhost:35357/v3/auth/tokens | awk '/X-Subject-Token/ {print $2}'`
+
+# IDs and constants to be used in curl scripts
+FEDERATION_ID='federationid'
+PROTOCOL_ID='saml2'
+MAPPING_ID='shib'
+ENTITY_IDS='"https://idp.mi.garr.it/idp/shibboleth"'
+
+# Register IdPs entityID in the federation module of keystone
+curl -si -H"X-Auth-Token:$TOKEN" -H "Content-type: application/json" -X PUT -d "{ \"identity_provider\": { \"description\": \"IdPs of the $FEDERATION_ID federation\", \"remote_ids\": [ $ENTITY_IDS ], \"enabled\": true } }" $OS_AUTH_URL/OS-FEDERATION/identity_providers/$FEDERATION_ID
+
+# Print identity_providers to see if everything's ok
+#curl -si -H"X-Auth-Token:$TOKEN" -H "Content-type: application/json" -X GET $OS_AUTH_URL/OS-FEDERATION/identity_providers
+
+# Add the protocol to manage SAML requests
+curl -si -H"X-Auth-Token:$TOKEN" -H "Content-type: application/json" -X PUT -d "{ \"protocol\": { \"mapping_id\": \"$MAPPING_ID\" } }" $OS_AUTH_URL/OS-FEDERATION/identity_providers/$FEDERATION_ID/protocols/$PROTOCOL_ID
+
+# Add the mapping
+curl -si -H"X-Auth-Token:$TOKEN" -H "Content-type: application/json" -X PUT -d "{ \"mapping\": { \"rules\": [ { \"local\": [ { \"user\": { \"domain\": { \"id\": \"default\" }, \"type\": \"local\", \"name\": \"{0}\" } } ], \"remote\": [ { \"type\": \"eppn\" } ] } ] } } " $OS_AUTH_URL/OS-FEDERATION/mappings/$MAPPING_ID
+```
+
+Lastly the ``/etc/openstack-dashboard/local_settings`` horizon config file must be edited as follows (only modified parts presented, all the rest of the file remains untouched):
+```ini
+OPENSTACK_KEYSTONE_URL = "https://os.server.name:5000/v3"
+...
+OPENSTACK_API_VERSIONS = {
+    "identity": 3,
+}
+
+# Enables keystone web single-sign-on if set to True.
+WEBSSO_ENABLED = True
+
+# Determines which authentication choice to show as default.
+WEBSSO_INITIAL_CHOICE = "saml2"
+
+WEBSSO_CHOICES = (
+    ("credentials", _("Keystone Credentials")),
+#    ("oidc", _("OpenID Connect")),
+    ("saml2", _("Security Assertion Markup Language"))) 
+```
