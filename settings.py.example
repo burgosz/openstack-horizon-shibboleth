@@ -1,0 +1,20 @@
+# Kestone URL
+OS_AUTH_URL = 'http://10.1.12.4:35357/v3'
+
+# URL of the DiscoFeed JSON interface produced by the Shibboleth SP
+DISCO_URL = 'https://os.server.name/Shibboleth.sso/DiscoFeed'
+
+# Admin username, usually not to change
+ADMIN_USERNAME = 'admin'
+
+# Admin token to be used to access kestone
+ADMIN_PASSWORD = 'd1410ad0ab162c016171'
+
+# ID of the federation to create in keystone
+FEDERATION_ID = 'Idem'
+
+# ID of the protocol created in keystone, usually not to change
+PROTOCOL_ID = 'saml2'
+
+# ID of the mapping created in keystone, usually not to change
+MAPPING_ID = 'shib'

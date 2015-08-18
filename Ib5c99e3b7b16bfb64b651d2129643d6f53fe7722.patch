@@ -1,0 +1,31 @@
+diff -ruN openstack_auth/utils.py /usr/lib/python2.7/site-packages/openstack_auth/utils.py
+--- openstack_auth/utils.py	2015-08-18 10:46:28.760189473 +0200
++++ /usr/lib/python2.7/site-packages/openstack_auth/utils.py	2015-04-14 04:57:33.000000000 +0200
+@@ -183,15 +183,6 @@
+     return websso_enabled and keystonev3_plus
+ 
+ 
+-def build_absolute_uri(request, relative_url):
+-    """Ensure absolute_uri are relative to WEBROOT."""
+-    webroot = getattr(settings, 'WEBROOT', '')
+-    if webroot.endswith("/") and relative_url.startswith("/"):
+-        webroot = webroot[:-1]
+-
+-    return request.build_absolute_uri(webroot + relative_url)
+-
+-
+ def has_in_url_path(url, sub):
+     """Test if the `sub` string is in the `url` path."""
+     scheme, netloc, path, query, fragment = urlparse.urlsplit(url)
+diff -ruN openstack_auth/views.py /usr/lib/python2.7/site-packages/openstack_auth/views.py
+--- openstack_auth/views.py	2015-08-18 10:46:23.991189461 +0200
++++ /usr/lib/python2.7/site-packages/openstack_auth/views.py	2015-08-18 09:57:13.906181893 +0200
+@@ -60,7 +60,7 @@
+         protocol = request.POST.get('auth_type', 'credentials')
+         if utils.is_websso_enabled() and protocol != 'credentials':
+             region = request.POST.get('region')
+-            origin = utils.build_absolute_uri(request, '/auth/websso/')
++            origin = request.build_absolute_uri('auth/websso/')
+             url = ('%s/auth/OS-FEDERATION/websso/%s?origin=%s' %
+                    (region, protocol, origin))
+             return shortcuts.redirect(url)

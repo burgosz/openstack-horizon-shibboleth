@@ -3,6 +3,7 @@
 import urllib
 import urllib2
 import json
+import settings
 
 def get_url(url, token=None, data=None, info=False, method='GET'):
     headers = { 'Content-type': 'application/json' }
@@ -20,7 +21,7 @@ def get_url(url, token=None, data=None, info=False, method='GET'):
     else:
         return response.read()
 
-def get_token(config):
+def get_token():
     data = {
         'auth': {
             'identity': {
@@ -30,8 +31,8 @@ def get_token(config):
                         'domain': {
                             'name': 'Default'
                         },
-                        'name': config['admin_username'],
-                        'password': config['admin_password']
+                        'name': settings.ADMIN_USERNAME,
+                        'password': settings.ADMIN_PASSWORD
                     }
                 }
             },
@@ -45,14 +46,14 @@ def get_token(config):
             }
         }
     }
-    response = get_url('%s/auth/tokens' % config['os_auth_url'], data=json.dumps(data), info=True)
+    response = get_url('%s/auth/tokens' % settings.OS_AUTH_URL, data=json.dumps(data), info=True)
     token = response.getheader('X-Subject-Token')
     if not token:
         raise Exception('Auth token not created correctly!')
     return token
 
-def get_new_idps_from_sp(config):
-    response = get_url('%s' % config['disco_url'])
+def get_new_idps_from_sp():
+    response = get_url('%s' % settings.DISCO_URL)
     response_data = json.loads(response)
     new_idps = [idp['entityID'] for idp in response_data]
 
@@ -61,72 +62,64 @@ def get_new_idps_from_sp(config):
 
     return new_idps
 
-def delete_old_idps(config, token):
-    response = get_url('%s/OS-FEDERATION/identity_providers' % config['os_auth_url'], token=token)
+def delete_old_idps(token):
+    response = get_url('%s/OS-FEDERATION/identity_providers' % settings.OS_AUTH_URL, token=token)
     response_data = json.loads(response)
     if not response_data['identity_providers']:
         return
 
-    get_url('%s/OS-FEDERATION/identity_providers/%s' % (config['os_auth_url'], config['federation_id']), token=token, method='DELETE')
+    get_url('%s/OS-FEDERATION/identity_providers/%s' % (settings.OS_AUTH_URL, settings.FEDERATION_ID), token=token, method='DELETE')
 
-    response = get_url('%s/OS-FEDERATION/identity_providers' % config['os_auth_url'], token=token)
+    response = get_url('%s/OS-FEDERATION/identity_providers' % settings.OS_AUTH_URL, token=token)
     response_data = json.loads(response)
     if response_data['identity_providers']:
         raise Exception('Identity providers not deleted correctly!')
 
-def register_new_idps(config, token, new_idps):
+def register_new_idps(token, new_idps):
     data = {
         'identity_provider': { 
-            'description': 'IdPs of the %s federation' % config['federation_id'],
+            'description': 'IdPs of the %s federation' % settings.FEDERATION_ID,
             'remote_ids': new_idps, 
             'enabled': True
         } 
     }
 
-    get_url('%s/OS-FEDERATION/identity_providers/%s' % (config['os_auth_url'], config['federation_id']), token=token, data=json.dumps(data), method='PUT')
+    get_url('%s/OS-FEDERATION/identity_providers/%s' % (settings.OS_AUTH_URL, settings.FEDERATION_ID), token=token, data=json.dumps(data), method='PUT')
 
-    response = get_url('%s/OS-FEDERATION/identity_providers' % config['os_auth_url'], token=token)
+    response = get_url('%s/OS-FEDERATION/identity_providers' % settings.OS_AUTH_URL, token=token)
     response_data = json.loads(response)
     if not response_data['identity_providers']:
         raise Exception('Identity providers not created correctly!')
 
-def add_idp_protocols(config, token):
+def add_idp_protocols(token):
     data = {
         'protocol': {
-            'mapping_id': config['mapping_id']
+            'mapping_id': settings.MAPPING_ID
         }
     }
 
-    get_url('%s/OS-FEDERATION/identity_providers/%s/protocols/%s' % (config['os_auth_url'], config['federation_id'], config['protocol_id']), token=token, data=json.dumps(data), method='PUT')
+    get_url('%s/OS-FEDERATION/identity_providers/%s/protocols/%s' % (settings.OS_AUTH_URL, settings.FEDERATION_ID, settings.PROTOCOL_ID), token=token, data=json.dumps(data), method='PUT')
 
-def update_metadata(config):
+def update_metadata():
     print 'Obtain all new IdPs from Discofeed...',
-    new_idps = get_new_idps_from_sp(config)
+    new_idps = get_new_idps_from_sp()
     print ' done!'
 
     print 'Retrieve a token to be used for authentication...',
-    token = get_token(config)
+    token = get_token()
     print ' done!'
 
     print 'Delete previously created IdPs...',
-    delete_old_idps(config, token)
+    delete_old_idps(token)
     print ' done!'
 
     print 'Register all new IdP entityIDs in the federation module of keystone...',
-    register_new_idps(config, token, new_idps)
+    register_new_idps(token, new_idps)
     print ' done!'
 
     print 'Add the protocol to manage SAML requests...',
-    add_idp_protocols(config, token)
+    add_idp_protocols(token)
     print ' done!'
 
 if __name__ == '__main__':
-    update_metadata({
-        'os_auth_url': 'http://10.20.30.49:35357/v3',
-        'disco_url': 'https://os-test.mi.garr.it/Shibboleth.sso/DiscoFeed',
-        'admin_username': 'admin',
-        'admin_password': '391fab406dff4474',
-        'federation_id': 'Idem',
-        'protocol_id': 'saml2',
-        'mapping_id': 'shib',
-    })
+    update_metadata()

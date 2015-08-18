@@ -142,8 +142,15 @@ This configuration consist on adding ``sessionHook="/regsite"`` to the ``Applica
 
 
 ### OpenStack keystone and horizon configuration
-To propertly configure keystone and horizon components of OpenStack to work correctly with federated access and with the regsite described in this projects,
-the following configurations need to be done.
+To propertly configure keystone and horizon components of OpenStack to work correctly with federated access and with the regsite described in this projects, the following configurations need to be done.a
+
+Firstly the ``openstack/django_openstack_auth`` project must be of a verion including the patch to the change id Change-Id: Ib5c99e3b7b16bfb64b651d2129643d6f53fe7722
+(more information on it can be found [on the official openstack review site](https://review.openstack.org/#/c/173669/).
+If he version of the project does not include this patch, it must be applied by hand with the followin commands:
+```sh
+$ cd /usr/lib/python2.7/site-packages/openstack_auth
+$ patch -p1 < /opt/openstack-horizon-shibboleth/Ib5c99e3b7b16bfb64b651d2129643d6f53fe7722.patch
+```
 
 The file ``/etc/keystone/keystone.conf`` must be modified as follows (only modified parts presented, all the rest of the file remains untouched):
 ```ini
@@ -168,7 +175,7 @@ sso_callback_template = /etc/keystone/sso_callback_template.html
 enable=True
 ```
 
-Thenk the following commands needs to be executed to create the right structures inside keystone via the JSON API:
+Then the following commands needs to be executed to create the right structures inside keystone via the JSON API:
 ```sh
 #!/bin/bash
 OS_AUTH_URL='https://os.server.name:5000/v3'
