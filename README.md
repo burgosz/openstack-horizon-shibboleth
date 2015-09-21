@@ -1,4 +1,4 @@
-# Shibboleth authentication plugin for Openstack Horizon
+# Shibboleth authentication plugin for Openstack
 
 Using this plugin Openstack Horizon can authenticate users via Shibboleth.<br>
 Features
@@ -132,7 +132,7 @@ Here an example of configuration for Apache:
 
 ### Shibboleth configuration
 Shibboleth must map the username provided via your attribute provider to <b>eppn</b>.<br>
-The roles and project names must be in the <b>entitlement</b> or <b>isMemberOf</b> attribute.
+The roles and project names might be in the <b>entitlement</b> or <b>isMemberOf</b> attribute. This is also configurable.
 This field must contain the project and role name separeted with colon: <i>entilement_prefix:<b>project:role</b></i>.<br>
 The email address of the user will be assigned based on the <b>mail</b> attribute.
 If no entitlement or eppn provided the user can't login.
