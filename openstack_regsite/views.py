@@ -21,8 +21,7 @@ def _update_user(request):
         raise Exception("Missing name attribute.")
 
     entitlement = request.META.get(settings.SHIBBOLETH_ENTITLEMENT_ATTRIBUTE, None)
-    if entitlement is not None:
-        username = utils.update_user(request)
+    username = utils.update_user(request)
 
     #redirect to the Shibboleth HOOK return url.
     return redirect(next_page)

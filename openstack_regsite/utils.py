@@ -43,7 +43,9 @@ def get_tenant(name):
     return None
 
 def get_entitlemets(request):
-    entitlement = request.META.get(entitlement_field, '').replace("\\", "")
+    entitlement = request.META.get(entitlement_field, None).replace("\\", "")
+    if entitlement is None:
+        return None
     entitlement_list = entitlement.split(';')
     ent_roles = defaultdict(list)
     # retrieve info from shibboleth session
@@ -75,10 +77,11 @@ def create_roles(client, role_list):
 def update_roles(request, user):
     client = admin_client()
     ent_roles = get_entitlemets(request)
-    create_tenants(client, ent_roles.keys())
-    role_list = [ent_roles[r] for r in ent_roles.keys()]
-    role_list = reduce(lambda x, y: x+y, role_list)
-    create_roles(client, role_list)
+    if ent_roles is not None:
+        create_tenants(client, ent_roles.keys())
+        role_list = [ent_roles[r] for r in ent_roles.keys()]
+        role_list = reduce(lambda x, y: x+y, role_list)
+        create_roles(client, role_list)
     existing_tenants = client.projects.list()
     for tenant in existing_tenants:
         # Check roles for the current tenant
@@ -87,7 +90,10 @@ def update_roles(request, user):
             # roles will be removed from user.
             # If the role in keystone is a correct role for the user, remove
             # this value from ent_roles.
-            if tenant.name in ent_roles and role.name in ent_roles[tenant.name]:
+            if (tenant.name in ent_roles and
+                role.name in ent_roles[tenant.name] and
+                ent_roles is not None):
+                
                 ent_roles[tenant.name].remove(role.name)
             # Otherwise, if the role in keystone is not correct, revoke the role
             # from the user.
