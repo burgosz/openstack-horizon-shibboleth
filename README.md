@@ -140,6 +140,14 @@ If no entitlement or eppn provided the user can't login.
 The Shibboleth SP must also be configured to invoke the post login hook that creates users/projects on keystone.
 This configuration consist on adding ``sessionHook="/regsite"`` to the ``ApplicationDefaults`` tag of the ``/etc/shibboleth/shibboleth2.xml`` file.
 
+Keep in mind that regsite will create whatever project and roles are specified in the entitlement value. Therefore in the attribute-policy.xml file of Shibboleth SP it is worth limiting the values somehow, e.g. :
+,,,
+<afp:PermitValueRule id="SourceRuleHEXAA" xsi:type="AND">
+    <Rule xsi:type="AttributeIssuerString" value="https://hexaa.eduid.hu/hexaa" />
+    <Rule xsi:type="AttributeValueRegex" regex="urn:any:issuer:[^:]+:[^:]+"/>
+</afp:PermitValueRule>
+,,,
+
 
 ### OpenStack keystone and horizon configuration
 To propertly configure keystone and horizon components of OpenStack to work correctly with federated access and with the regsite described in this projects, the following configurations need to be done.a
