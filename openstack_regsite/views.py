@@ -50,6 +50,7 @@ def _show_user_creation_page(request):
         'return': request.GET.get('return', '/'),
         'target': request.GET.get('target', None),
         'base_url': settings.BASE_URL,
+        'password_set_enabled': settings.PASSWORD_SET_ENABLED,
     }
 
     return render_to_response('regsite/index.html', attributes)

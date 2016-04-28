@@ -15,26 +15,7 @@
     <link href="{% static 'bootstrap-callout.min.css' %}" rel="stylesheet">
   </head>
   <body>
-    <script>
-    function validatePassword(){
-      var password=document.getElementsByName('password')[0].value;
-      var confirmPassword=document.getElementsByName('confirmPassword')[0].value;
-      if (password!=confirmPassword && password!=""){
-        document.getElementById('messagespan').innerHTML="Passwords doesn't match!";
-        document.getElementById('continuebutton').disabled=true;
-
-      }
-      else if (password=="") {
-        document.getElementById('messagespan').innerHTML="Password is not set!";
-        document.getElementById('continuebutton').disabled=true;
-      }
-      else {
-        document.getElementById('messagespan').innerHTML="";
-        document.getElementById('continuebutton').disabled=false;
-      }
-    }
-  </script>
-    <div class="jumbotron">
+   <div class="jumbotron">
       <div class="container">
         <h1>OpenStack Registration Site</h1>
         <p>Website that permits to register users to access OpenStack via the federated keystone configuration.</p>
@@ -67,26 +48,50 @@
         <p>If the information you see are correct, please continue.
         A user for your access will be automatically created in Keystone and the relevant tenants, roles will be created and assigned to your user.</p>
         <div class="bs-docs-section">
-  <form id="identicalForm" class="form-horizontal" _lpchecked="1">
-    <div class="form-group">
-        <label class="col-xs-2 control-label">Password</label>
-        <div class="col-xs-5">
-            <input type="password" class="form-control" name="password">
-        </div>
-    </div>
+	{% if password_set_enabled == True %}
+	 <script>
+	    function validatePassword(){
+	      var password=document.getElementsByName('password')[0].value;
+	      var confirmPassword=document.getElementsByName('confirmPassword')[0].value;
+	      if (password!=confirmPassword && password!=""){
+		document.getElementById('messagespan').innerHTML="Passwords doesn't match!";
+		document.getElementById('continuebutton').disabled=true;
 
-    <div class="form-group">
-        <label class="col-xs-2 control-label">Retype password</label>
-        <div class="col-xs-5">
-            <input type="password" class="form-control" name="confirmPassword" onkeyup="validatePassword()">
-        </div>
-    </div><div class="row" style="margin-bottom:15px">
-  <div class="col-xs-2"></div>
-<div id="messagespan" style="color:red;" class="col-xs-5">Password not set!</div>
-</div> 
-<button type="submit" formmethod="post" formaction="{{ base_url }}/shib_hook?return={{ return|urlencode }}&target={{ target|urlencode }}" class="btn btn-primary btn-lg" role="button" id="continuebutton" disabled >Continue</button> <a href="{{ openstack_url }}" class="btn btn-danger btn-lg" role="button" id="continuebutton">Go back to Horizon</a>
+	      }
+	      else if (password=="") {
+		document.getElementById('messagespan').innerHTML="Password is not set!";
+		document.getElementById('continuebutton').disabled=true;
+	      }
+	      else {
+		document.getElementById('messagespan').innerHTML="";
+		document.getElementById('continuebutton').disabled=false;
+	      }
+	    }
+	  </script>
+	 
+	  <form id="identicalForm" class="form-horizontal" _lpchecked="1">	  
+	    <div class="form-group">
+		<label class="col-xs-2 control-label">Password</label>
+		<div class="col-xs-5">
+		    <input type="password" class="form-control" name="password">
+		</div>
+	    </div>
 
-</form>
+	    <div class="form-group">
+		<label class="col-xs-2 control-label">Retype password</label>
+		<div class="col-xs-5">
+		    <input type="password" class="form-control" name="confirmPassword" onkeyup="validatePassword()">
+		</div>
+	    </div><div class="row" style="margin-bottom:15px">
+	  <div class="col-xs-2"></div>
+	<div id="messagespan" style="color:red;" class="col-xs-5">Password not set!</div>
+	</div> 
+	<button type="submit" formmethod="post" formaction="{{ base_url }}/shib_hook?return={{ return|urlencode }}&target={{ target|urlencode }}" class="btn btn-primary btn-lg" role="button" id="continuebutton" disabled >Continue</button> <a href="{{ openstack_url }}" class="btn btn-danger btn-lg" role="button" id="continuebutton">Go back to Horizon</a>
+	{% else %}
+	<a href="{{ base_url }}/shib_hook?return={{ return|urlencode }}&target={{ target|urlencode }}" class="btn btn-primary btn-lg" role="button" id="continuebutton">Continue</a> <a href="{{ openstack_url }}" class="btn btn-danger btn-lg" role="button" id="continuebutton">Go back to Horizon</a>
+	{% endif %}
+
+	</form>
 </div>
      </div>
 
