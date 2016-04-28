@@ -2,10 +2,15 @@ from django.conf import settings
 import logging
 from collections import defaultdict
 from keystoneclient.v3 import client as keystone_client
+from keystoneclient.auth.identity import v3
+from keystoneclient import session
 
 LOG = logging.getLogger(__name__)
 
-admin_token = getattr(settings, 'OPENSTACK_KEYSTONE_ADMIN_TOKEN')
+#admin_token = getattr(settings, 'OPENSTACK_KEYSTONE_ADMIN_TOKEN')
+keystone_user = getattr(settings, 'OPENSTACK_KEYSTONE_USER')
+keystone_password = getattr(settings, 'OPENSTACK_KEYSTONE_PASSWORD')
+keystone_user_project = getattr(settings, 'OPENSTACK_KEYSTONE_USER_PROJECT')
 admin_url = getattr(settings, 'OPENSTACK_KEYSTONE_ADMIN_URL')
 name_field = getattr(settings, 'SHIBBOLETH_NAME_ATTRIBUTE', 'eppn')
 mail_field = getattr(settings, 'SHIBBOLETH_EMAIL_ATTRIBUTE', 'mail')
@@ -15,7 +20,15 @@ default_domain = getattr(settings, 'DEFAULT_DOMAIN_NAME', 'Default')
 
 def admin_client():
     endpoint = admin_url
-    client = keystone_client.Client(token=admin_token, endpoint=endpoint)
+    auth = v3.Password(auth_url=admin_url,
+                       username=keystone_user,
+                       password=keystone_password,
+                       user_domain_id='default',
+                       project_name=keystone_user_project,
+                       project_domain_id='default'
+                      )
+    sess = session.Session(auth=auth)
+    client = keystone_client.Client(session=sess)
     return client
 
 def get_user(username):
@@ -42,14 +55,14 @@ def get_tenant(name):
             return tenant
     return None
 
-def get_entitlemets(request):
-    entitlement = request.META.get(entitlement_field, None).replace("\\", "")
+def parse_entitlements(entitlement):
     if entitlement is None:
         return None
     entitlement_list = entitlement.split(';')
     ent_roles = defaultdict(list)
     # retrieve info from shibboleth session
     for entitlement in entitlement_list:
+        entitlement = entitlement.strip(':')
         splitted = entitlement.split(":")
         rolename = splitted[len(splitted)-1]
         tenantname = splitted[len(splitted)-2]
@@ -74,9 +87,9 @@ def create_roles(client, role_list):
         if role is None:
             client.roles.create(rolename)
 
-def update_roles(request, user):
+def update_roles(entitlement, user):
     client = admin_client()
-    ent_roles = get_entitlemets(request)
+    ent_roles = parse_entitlements(entitlement)
     if ent_roles is not None:
         create_tenants(client, ent_roles.keys())
         role_list = [ent_roles[r] for r in ent_roles.keys()]
@@ -90,29 +103,30 @@ def update_roles(request, user):
             # roles will be removed from user.
             # If the role in keystone is a correct role for the user, remove
             # this value from ent_roles.
-            if (tenant.name in ent_roles and
-                role.name in ent_roles[tenant.name] and
-                ent_roles is not None):
-                
+            if (ent_roles is not None and
+                tenant.name in ent_roles and
+                role.name in ent_roles[tenant.name]):
+
                 ent_roles[tenant.name].remove(role.name)
             # Otherwise, if the role in keystone is not correct, revoke the role
             # from the user.
             else:
                 client.roles.revoke(role, user=user, project=tenant)
     # Create remaining roles in the ent_roles dict.
-    for tenant in existing_tenants:
-        if tenant.name in ent_roles:
-            for rolename in ent_roles[tenant.name]:
-                role = get_role(rolename)
-                client.roles.grant(role, user=user, project=tenant)
+    if ent_roles is not None:
+        for tenant in existing_tenants:
+            if tenant.name in ent_roles:
+                for rolename in ent_roles[tenant.name]:
+                    role = get_role(rolename)
+                    client.roles.grant(role, user=user, project=tenant)
 
 def update_mail(user, email):
     client = admin_client()
     client.users.update(user, email=email)
 
-def create_user(username):
+def create_user(username, password):
     client = admin_client()
-    newuser = client.users.create(name=username, domain=default_domain)
+    newuser = client.users.create(name=username, domain=default_domain, password=password)
     return newuser
 
 def user_exists(username):
@@ -122,8 +136,7 @@ def user_exists(username):
     user = get_user(username)
     return user is not None
 
-def update_user(request):
-    username = request.META.get(name_field, None)
+def update_user(username, entitlement, mail=None, password=None):
     if settings.TEST:
         return username
 
@@ -131,15 +144,10 @@ def update_user(request):
 
     if user is None:
         LOG.info("Creating user %s." % username)
-        user = create_user(username)
+        user = create_user(username, password)
 
-    update_roles(request, user)
-    email = request.META.get(mail_field, None)
-
-    try:
-        if user.email != email:
-            update_mail(user, email)
-    except AttributeError:
-        update_mail(user, email)
+    update_roles(entitlement, user)
+    if mail is not None:
+        update_mail(user, mail)
 
     return user.name

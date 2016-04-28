@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="OpenStack Registration Site.">
     <meta name="keywords" content="OpenStack, Keystone, Shibboleth, eduGAIN">
-    <meta name="author" content="Mihaly Heder, Andrea Biancini">
+    <meta name="author" content="Szabolcs Tenczer, Mihaly Heder, Andrea Biancini">
 
     <title>OpenStack Registration Site</title>
 
@@ -15,6 +15,25 @@
     <link href="{% static 'bootstrap-callout.min.css' %}" rel="stylesheet">
   </head>
   <body>
+    <script>
+    function validatePassword(){
+      var password=document.getElementsByName('password')[0].value;
+      var confirmPassword=document.getElementsByName('confirmPassword')[0].value;
+      if (password!=confirmPassword && password!=""){
+        document.getElementById('messagespan').innerHTML="Passwords doesn't match!";
+        document.getElementById('continuebutton').disabled=true;
+
+      }
+      else if (password=="") {
+        document.getElementById('messagespan').innerHTML="Password is not set!";
+        document.getElementById('continuebutton').disabled=true;
+      }
+      else {
+        document.getElementById('messagespan').innerHTML="";
+        document.getElementById('continuebutton').disabled=false;
+      }
+    }
+  </script>
     <div class="jumbotron">
       <div class="container">
         <h1>OpenStack Registration Site</h1>
@@ -30,6 +49,7 @@
         This server is available at this URL: <big><span class="label label-danger">{{ openstack_url }}</span></big>.<br/>
         To access this server your user must be registered in keystone (admin url: <big><span class="label label-danger">{{ openstack_keystone }}</span></big>).</p>
       </div>
+
     
       <div class="bs-docs-section">
         <h2>Access OpenStack with federated user</h2>
@@ -46,8 +66,30 @@
         </table>
         <p>If the information you see are correct, please continue.
         A user for your access will be automatically created in Keystone and the relevant tenants, roles will be created and assigned to your user.</p>
-        <p><a href="{{ base_url }}shib_hook?return={{ return|urlencode }}&target={{ target|urlencode }}" class="btn btn-primary btn-lg" role="button">Continue and create user, tenants and roles</a> <a href="{{ openstack_url }}" class="btn btn-danger btn-lg" role="button">Go back to OpenStack</a></p>
-      </div>
+        <div class="bs-docs-section">
+  <form id="identicalForm" class="form-horizontal" _lpchecked="1">
+    <div class="form-group">
+        <label class="col-xs-2 control-label">Password</label>
+        <div class="col-xs-5">
+            <input type="password" class="form-control" name="password">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label class="col-xs-2 control-label">Retype password</label>
+        <div class="col-xs-5">
+            <input type="password" class="form-control" name="confirmPassword" onkeyup="validatePassword()">
+        </div>
+    </div><div class="row" style="margin-bottom:15px">
+  <div class="col-xs-2"></div>
+<div id="messagespan" style="color:red;" class="col-xs-5">Password not set!</div>
+</div> 
+<button type="submit" formmethod="post" formaction="{{ base_url }}/shib_hook?return={{ return|urlencode }}&target={{ target|urlencode }}" class="btn btn-primary btn-lg" role="button" id="continuebutton" disabled >Continue</button> <a href="{{ openstack_url }}" class="btn btn-danger btn-lg" role="button" id="continuebutton">Go back to Horizon</a>
+
+</form>
+</div>
+     </div>
+
     </div>
   </body>
 </html>
