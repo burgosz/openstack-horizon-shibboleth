@@ -24,7 +24,7 @@ setup(name='openstack_regsite',
       include_package_data=True,
       zip_safe=False,
       install_requires=[
-          'Django>=1.7',
+          'Django>=1.8,<1.9',
           'requests>=1.0.0',
           #'djangosaml2>=0.9.0',
       ],
