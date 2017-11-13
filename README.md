@@ -1,5 +1,4 @@
 # Shibboleth authentication plugin for Openstack
-
 Using this plugin Openstack Horizon can authenticate users via Shibboleth.<br>
 Features
   - User authentication
@@ -8,13 +7,30 @@ Features
   - Role creation
   - Access control based on Shibboleth provided attributes
 
+### Upgrade from older version
+To upgrade from older version you must pull the project.
+Reflect the n
+* Edit your settings.py (openstack_dashboard/settings.py)
+    * Delete OPENSTACK_KEYSTONE_ADMIN_TOKEN
+    * Add: OPENSTACK_KEYSTONE_USER = "This user will be used to create other users
+and projects. It has to be rights to do this."
+    * Add: OPENSTACK_KEYSTONE_PASSWORD = "This is the password of the above user."
+    * Add: OPENSTACK_KEYSTONE_USER_PROJECT = "This is the project of the user."
+    * Add: SHIBBOLETH_ENTITLEMENT_ID = 'urn:oid:1.3.6.1.4.1.5923.1.1.1.7' - this
+is only used in Hexaa hook
+    * Add: SHIBBOLETH_HOOK_KEY = 'This is the hook key to use Hexaa deprovisioning
+function.'
+    * Add: MISSING_ENTITLEMENT_MESSAGE = "Entitlement attribute is missing!"
+    * Add: MISSING_EPPN_MESSAGE = "EPPN attribute is missing!"
+    * Add: PASSWORD_SET_ENABLED = True - this enables the users to set password
+* Restart your webserver
 ### How it works
 To permit federated users to access OpenStack in a transparent way, the following main components are involved:
 * The authentication submodule keystone needs to be configured as a Service Provider to a federation.
   This can be done activating the "federation" module of keystone.
 * A webpage needs to be created to manage user/project creation, this page will operate as a standalone "signup page" web app (working title: regsite).
   This registration page can be automatically invoked after user login with a specific "post login" hook provided by the Shibboleth SP.
-* Horizon needs to authenticate users with a web-SSO profile, usually provided by Shibboleth SP. 
+* Horizon needs to authenticate users with a web-SSO profile, usually provided by Shibboleth SP.
 
 The backend will generate a password for the user which can be used for API and cli usage. This password can be checked in /horizon/auth_shib/get_password/ url.
 
@@ -23,9 +39,9 @@ This installation procedure describes how to configure the "regsite" Django appl
 This installation procedure has been developed on Ubuntu Linux (14.04 LTS) but should work on any linux distro with relatively small changes.
 
 On Ubuntu Linux 14.04 the necessary software that needs to be installed before this procedure could take care of the rest is:
-* libffi-dev 
-* python-virtualenv 
-* apache2 
+* libffi-dev
+* python-virtualenv
+* apache2
 * libapache2-mod-wsgi
 * libapabhe2-mod-shib
 
@@ -228,5 +244,5 @@ WEBSSO_INITIAL_CHOICE = "saml2"
 WEBSSO_CHOICES = (
     ("credentials", _("Keystone Credentials")),
 #    ("oidc", _("OpenID Connect")),
-    ("saml2", _("Security Assertion Markup Language"))) 
+    ("saml2", _("Security Assertion Markup Language")))
 ```
