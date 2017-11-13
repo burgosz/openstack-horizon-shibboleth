@@ -9,7 +9,6 @@ Features
 
 ### Upgrade from older version
 To upgrade from older version you must pull the project.
-Reflect the n
 * Edit your settings.py (openstack_dashboard/settings.py)
     * Delete OPENSTACK_KEYSTONE_ADMIN_TOKEN
     * Add: OPENSTACK_KEYSTONE_USER = "This user will be used to create other users
